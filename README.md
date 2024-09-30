@@ -1,4 +1,4 @@
-# MyFirstRepo
+# Personal Projects
 
 ## Editing this file
 
