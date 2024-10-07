@@ -1,12 +1,12 @@
 # Import required libraries
 
-import pandas as pd
+import pandas as pd # type: ignore
 import dash # type: ignore
 from dash import html # type: ignore
 from dash import dcc # type: ignore
 from dash.dependencies import Input, Output # type: ignore
 import plotly.express as px # type: ignore
-import pybaseball as base
+import pybaseball as base # type: ignore
 import dash_bootstrap_components as dbc # type: ignore
 
 current_batting = base.batting_stats_bref(2024)
@@ -66,7 +66,7 @@ def get_card_viz(player):
     selected_player = current_batting[current_batting['Name'] == player]
     
     #batting average
-    ba = float(selected_player['BA'])
+    ba = float(selected_player['BA'].iloc[0])
     ba_card = dbc.Card([dbc.CardHeader('Batting Average'), dbc.CardBody([html.H4(f"{ba:.3f}", className='card-value')])],
              style = {"width": "12.5rem"})
     
@@ -83,7 +83,7 @@ def get_card_viz(player):
              style = {"width": "12.5rem"})
     
     #ops
-    ops = float(selected_player['OPS'])
+    ops = float(selected_player['OPS'].iloc[0])
     ops_card = dbc.Card([dbc.CardHeader('OPS'), dbc.CardBody([html.H4(f"{ops:.3f}", className='card-value')])],
              style = {"width": "12.5rem"})
     return ba_card, runs_card, hr_card, rbi_card, ops_card
