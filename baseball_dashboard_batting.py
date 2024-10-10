@@ -36,7 +36,9 @@ app.layout = dbc.Container(html.Div(children=[html.H1('MLB Batting Dashboard',
                                 dbc.Col(dbc.Card(id='runs_card', style = {"width": "12.5rem"}), width='auto'),         
                                 dbc.Col(dbc.Card(id='home_runs_card', style = {"width": "12.5rem"}), width='auto'),
                                 dbc.Col(dbc.Card(id='rbi_card', style = {"width": "12.5rem"}), width='auto'),
-                                dbc.Col(dbc.Card(id='ops_card', style = {"width": "12.5rem"}), width='auto')])
+                                dbc.Col(dbc.Card(id='ops_card', style = {"width": "12.5rem"}), width='auto'),
+                                html.Br(),
+                                dbc.Col(dbc.Card(id='launch_speed_card', style = {"width": "12.5rem"}), width='auto')])
                                 
                                 
 
@@ -52,6 +54,8 @@ app.layout = dbc.Container(html.Div(children=[html.H1('MLB Batting Dashboard',
 def set_year(chosen_year):
     current_batting = base.batting_stats_bref(chosen_year)
     df_mlbid = current_batting['mlbID']
+    current_batting['Year'] = chosen_year
+    current_batting['mlbID2'] = current_batting['mlbID']
     current_batting = current_batting.set_index('mlbID')
 
 
@@ -75,6 +79,7 @@ def set_year(chosen_year):
               Output(component_id='home_runs_card', component_property='children'),
               Output(component_id='rbi_card', component_property='children'),
               Output(component_id='ops_card', component_property='children'),
+              Output(component_id='launch_speed_card', component_property='children'),
               Input(component_id='player-dropdown', component_property='value'),
               Input('intermediate-value', 'data'))
 
@@ -82,6 +87,7 @@ def get_card_viz(player, batting):
     #filter for selected player
     current_batting = pd.read_json(io.StringIO(batting), orient='split')
     selected_player = current_batting[current_batting['Name'] == player]
+    year = int(current_batting['Year'].iloc[0])
     
     #batting average
     ba = float(selected_player['BA'].iloc[0])
@@ -104,7 +110,27 @@ def get_card_viz(player, batting):
     ops = float(selected_player['OPS'].iloc[0])
     ops_card = dbc.Card([dbc.CardHeader('OPS'), dbc.CardBody([html.H4(f"{ops:.3f}", className='card-value')])],
              style = {"width": "12.5rem"})
-    return ba_card, runs_card, hr_card, rbi_card, ops_card
+    
+    #statcast data
+    dates_dict = {2021: ['2021-04-01', '2021-10-03'],
+                  2022: ['2022-03-31', '2022-10-02'],
+                  2023: ['2023-03-30', '2023-10-01'],
+                  2024: ['2024-03-20', '2024-09-30']}
+    
+    statcast_player = base.statcast_batter(start_dt=dates_dict[year][0],
+                                           end_dt=dates_dict[year][1],
+                                           player_id=selected_player['mlbID2'].iloc[0])
+    
+    #drop nulls
+    statcast_player = statcast_player.dropna(how='all', axis=0)
+    statcast_player = statcast_player[statcast_player['description'] == 'hit_into_play']
+    
+    #launch speed card
+    launch_speed = statcast_player['launch_speed'].mean()
+    launch_speed_card = dbc.Card([dbc.CardHeader('Launch Speed'), dbc.CardBody([html.H4(launch_speed, className='card-value')])],
+             style = {"width": "12.5rem"})
+    
+    return ba_card, runs_card, hr_card, rbi_card, ops_card, launch_speed_card
 if __name__ == '__main__':
     app.run_server()
 
