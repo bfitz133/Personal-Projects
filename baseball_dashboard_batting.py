@@ -2,6 +2,7 @@
 import io # type: ignore
 import json # type: ignore
 import pandas as pd # type: ignore
+import numpy as np # type: ignore
 import dash # type: ignore
 from dash import html # type: ignore
 from dash import dcc # type: ignore
@@ -36,14 +37,12 @@ app.layout = dbc.Container(html.Div(children=[html.H1('MLB Batting Dashboard',
                                 dbc.Col(dbc.Card(id='runs_card', style = {"width": "12.5rem"}), width='auto'),         
                                 dbc.Col(dbc.Card(id='home_runs_card', style = {"width": "12.5rem"}), width='auto'),
                                 dbc.Col(dbc.Card(id='rbi_card', style = {"width": "12.5rem"}), width='auto'),
-                                dbc.Col(dbc.Card(id='ops_card', style = {"width": "12.5rem"}), width='auto'),
-                                html.Br(),
-                                dbc.Col(dbc.Card(id='launch_speed_card', style = {"width": "12.5rem"}), width='auto')])
+                                dbc.Col(dbc.Card(id='ops_card', style = {"width": "12.5rem"}), width='auto')]),
+                                dbc.Row([dbc.Col(html.Br()),
+                                html.Div(dcc.Graph(id='BA-BAR'))])
+                                         ])
                                 
-                                
-
-
-]), className='dashboard-container')
+, className='dashboard-container')
     
 
 # Callback Function for Year Selection
@@ -73,13 +72,13 @@ def set_year(chosen_year):
         dropdown_dict = {}
     return dropdown_list, current_batting.to_json(date_format='iso', orient='split')
     
-# Callback Function for Batting Cards
+# Callback Function for Batting Visuals
 @app.callback(Output(component_id='batting_average_card', component_property='children'),
               Output(component_id='runs_card', component_property='children'),
               Output(component_id='home_runs_card', component_property='children'),
               Output(component_id='rbi_card', component_property='children'),
               Output(component_id='ops_card', component_property='children'),
-              Output(component_id='launch_speed_card', component_property='children'),
+              Output(component_id='BA-BAR', component_property='figure'),
               Input(component_id='player-dropdown', component_property='value'),
               Input('intermediate-value', 'data'))
 
@@ -123,14 +122,38 @@ def get_card_viz(player, batting):
     
     #drop nulls
     statcast_player = statcast_player.dropna(how='all', axis=0)
-    statcast_player = statcast_player[statcast_player['description'] == 'hit_into_play']
     
-    #launch speed card
-    launch_speed = statcast_player['launch_speed'].mean()
-    launch_speed_card = dbc.Card([dbc.CardHeader('Launch Speed'), dbc.CardBody([html.H4(launch_speed, className='card-value')])],
-             style = {"width": "12.5rem"})
+    #add month call for further analysis
+    statcast_player['Month'] = pd.to_datetime(statcast_player['game_date']).dt.month
+    statcast_player['Hit'] = statcast_player['events'].apply(lambda x: 1 if x in ['single', 'double', 'triple', 'home_run'] else 0)
     
-    return ba_card, runs_card, hr_card, rbi_card, ops_card, launch_speed_card
+    #drop nulls in events
+    statcast_player = statcast_player.dropna(axis=0, subset=['events'])
+    
+    def f(row):
+        if row['events'] in ['single', 'double', 'triple', 'home_run']:
+            val = 1
+        elif row['events'].__contains__('out'):
+            val = 1
+        elif row['events'].__contains__('error'):
+            val = 1
+        else:
+            val = 0
+        return val
+
+    statcast_player['At Bats'] = statcast_player.apply(f, axis=1)
+    
+    #monthly batting average graph
+    statcast_ba = statcast_player[['Month','Hit', 'At Bats']].groupby(['Month']).sum()
+    statcast_ba['BA'] = statcast_ba['Hit']/statcast_ba['At Bats']
+    statcast_ba = statcast_ba.reset_index()
+    pd.options.display.float_format = '{:.3f}'.format
+
+    fig = px.bar(statcast_ba, x='Month', y='BA', text = 'BA', title='Batting Average by Month')
+    fig.update_traces(texttemplate = '%{text:.3f}', textposition='outside')
+   
+    
+    return ba_card, runs_card, hr_card, rbi_card, ops_card, fig
 if __name__ == '__main__':
     app.run_server()
 
