@@ -10,6 +10,7 @@ from dash.dependencies import Input, Output, State # type: ignore
 import plotly.express as px # type: ignore
 import pybaseball as base # type: ignore
 import dash_bootstrap_components as dbc # type: ignore
+base.cache.enable()
 
 # Create a dash application
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.SIMPLEX])
@@ -39,7 +40,7 @@ app.layout = dbc.Container(html.Div(children=[html.H1('MLB Batting Dashboard',
                                 dbc.Col(dbc.Card(id='rbi_card', style = {"width": "12.5rem"}), width='auto'),
                                 dbc.Col(dbc.Card(id='ops_card', style = {"width": "12.5rem"}), width='auto')]),
                                 dbc.Row([dbc.Col(html.Br()),
-                                html.Div(dcc.Graph(id='BA-BAR'))])
+                                html.Div(dcc.Graph(id='BA-BAR', figure={'layout': {'height': 300}}))])
                                          ])
                                 
 , className='dashboard-container')
@@ -150,7 +151,7 @@ def get_card_viz(player, batting):
     pd.options.display.float_format = '{:.3f}'.format
 
     fig = px.bar(statcast_ba, x='Month', y='BA', text = 'BA', title='Batting Average by Month')
-    fig.update_traces(texttemplate = '%{text:.3f}', textposition='outside')
+    fig.update_traces(texttemplate = '%{text:.3f}', textposition='inside', insidetextanchor='end')
    
     
     return ba_card, runs_card, hr_card, rbi_card, ops_card, fig
