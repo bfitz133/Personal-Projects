@@ -149,12 +149,15 @@ def get_card_viz(player, batting):
     statcast_ba['BA'] = statcast_ba['Hit']/statcast_ba['At Bats']
     statcast_ba = statcast_ba.reset_index()
     pd.options.display.float_format = '{:.3f}'.format
-
-    fig = px.bar(statcast_ba, x='Month', y='BA', text = 'BA', title='Batting Average by Month')
-    fig.update_traces(texttemplate = '%{text:.3f}', textposition='inside', insidetextanchor='end')
    
-    
+    fig = px.bar(x=statcast_ba['Month'], y=statcast_ba['BA'], text = statcast_ba['BA'],
+                 title='Batting Average by Month', labels={'x': 'Month', 'y': 'Batting Average'}, 
+                color=statcast_ba['BA'], color_continuous_scale=['orange', 'yellow', 'green'])
+    fig.update_traces(texttemplate = '%{text:.3f}', textposition='inside', insidetextanchor='end', name='Batting Average')
+    fig.add_scatter(x=statcast_ba['Month'], y=statcast_ba['BA'], mode='lines', name='BA',
+                    marker=dict(color='black'), showlegend=False)
     return ba_card, runs_card, hr_card, rbi_card, ops_card, fig
+
 if __name__ == '__main__':
     app.run_server()
 
