@@ -119,10 +119,10 @@ def get_card_viz(player, statistic, batting):
              style = {"width": "12.5rem"})
     
     #statcast data
-    dates_dict = {2021: ['2021-03-20', '2021-10-05'],
-                  2022: ['2022-03-20', '2022-10-05'],
-                  2023: ['2023-03-20', '2023-10-05'],
-                  2024: ['2024-03-20', '2024-10-05']}
+    dates_dict = {2021: ['2021-04-01', '2021-10-03'],
+                  2022: ['2022-03-31', '2022-10-02'],
+                  2023: ['2023-03-30', '2023-10-01'],
+                  2024: ['2024-03-20', '2024-09-30']}
     
     statcast_player = base.statcast_batter(start_dt=dates_dict[year][0],
                                            end_dt=dates_dict[year][1],
