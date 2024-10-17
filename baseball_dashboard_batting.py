@@ -26,12 +26,14 @@ app.layout = dbc.Container(html.Div(children=[html.H1('MLB Batting Dashboard',
                                                                     {'label': '2024', 'value': 2024}],
                                                            value=2024,
                                                            placeholder='Select Year Here',
-                                                           searchable=True),
+                                                           searchable=True,
+                                                           style={'backgroundColor': '#EDEDED'}),
                                   dcc.Dropdown(id='player-dropdown', 
                                   options=[],
                                   value='Shohei Ohtani',
                                   placeholder="Select an MLB Player Here",
-                                  searchable=True),
+                                  searchable=True,
+                                  style={'backgroundColor': '#EDEDED'}),
                                   dcc.Store(id='intermediate-value', storage_type='session'),
                                 html.Br(),
                                 dbc.Row([dbc.Col(dbc.Card(id='batting_average_card', style = {"width": "12.5rem"}), width='auto'),
@@ -44,7 +46,8 @@ app.layout = dbc.Container(html.Div(children=[html.H1('MLB Batting Dashboard',
                                              options=[{'label': 'Batting Average', 'value': 'Batting Average'},
                                                       {'label': 'Home Runs', 'value': 'Home Runs'}],
                                              value='Batting Average', placeholder='Choose Statistic Here',
-                                             searchable=True),
+                                             searchable=True,
+                                             style={'backgroundColor': '#EDEDED'}),
                                 dbc.Row([dbc.Col(html.Br()),
                                 html.Div(dcc.Graph(id='BA-BAR', figure={'layout': {'height': 300}}))])
                                          ])
@@ -99,24 +102,24 @@ def get_card_viz(player, statistic, batting):
     #batting average
     ba = float(selected_player['BA'].iloc[0])
     ba_card = dbc.Card([dbc.CardHeader('Batting Average'), dbc.CardBody([html.H4(f"{ba:.3f}", className='card-value')])],
-             style = {"width": "12.5rem"})
+             style = {"width": "12.5rem"}, class_name='card', inverse=True)
     
     #runs scored
     runs_card = dbc.Card([dbc.CardHeader('Runs'), dbc.CardBody([html.H4(selected_player['R'], className='card-value')])],
-             style = {"width": "12.5rem"})
+             style = {"width": "12.5rem"}, class_name='card', inverse=True)
     
     #home runs
     hr_card = dbc.Card([dbc.CardHeader('Home Runs'), dbc.CardBody([html.H4(selected_player['HR'], className='card-value')])],
-             style = {"width": "12.5rem"})
+             style = {"width": "12.5rem"}, class_name='card', inverse=True)
     
     #runs batted in
     rbi_card = dbc.Card([dbc.CardHeader('RBI'), dbc.CardBody([html.H4(selected_player['RBI'], className='card-value')])],
-             style = {"width": "12.5rem"})
+             style = {"width": "12.5rem"}, class_name='card', inverse=True)
     
     #ops
     ops = float(selected_player['OPS'].iloc[0])
     ops_card = dbc.Card([dbc.CardHeader('OPS'), dbc.CardBody([html.H4(f"{ops:.3f}", className='card-value')])],
-             style = {"width": "12.5rem"})
+             style = {"width": "12.5rem"}, class_name='card', inverse=True)
     
     #statcast data
     dates_dict = {2021: ['2021-04-01', '2021-10-03'],
@@ -177,12 +180,16 @@ def get_card_viz(player, statistic, batting):
         y_label = 'Home Runs'
    
     fig = px.bar(x=x_val, y=y_val, text = y_val,
-                 title=title_val, labels={'x': 'Month', 'y': y_label}, 
+                 title=title_val, labels={'x': 'Month', 'y': y_label},
                 color=y_val, color_continuous_scale=['orange', 'yellow', 'green'])
     if statistic == 'Batting Average':
         fig.update_traces(texttemplate = '%{text:.3f}', textposition='inside', insidetextanchor='end', name=y_label)
     fig.add_scatter(x=x_val, y=y_val, mode='lines', name=y_label,
-                    marker=dict(color='black'), showlegend=False)
+                    marker=dict(color='white'), showlegend=False)
+    #fig.layout.template = 'plotly_dark'
+    fig.layout.plot_bgcolor = '#323232'
+    fig.layout.paper_bgcolor = '#323232'
+    fig.layout.font = {'color': '#FFFFFF'}
     return ba_card, runs_card, hr_card, rbi_card, ops_card, fig
 
 if __name__ == '__main__':
