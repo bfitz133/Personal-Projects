@@ -42,14 +42,16 @@ app.layout = dbc.Container(html.Div(children=[html.H1('MLB Batting Dashboard',
                                 dbc.Col(dbc.Card(id='rbi_card', style = {"width": "12.5rem"}), width='auto'),
                                 dbc.Col(dbc.Card(id='ops_card', style = {"width": "12.5rem"}), width='auto')]),
                                 html.Br(),
-                                dcc.Dropdown(id='statistic-dropdown',
+                                dbc.Row(
+                                    [dbc.Col(dcc.Dropdown(id='statistic-dropdown',
                                              options=[{'label': 'Batting Average', 'value': 'Batting Average'},
                                                       {'label': 'Home Runs', 'value': 'Home Runs'}],
                                              value='Batting Average', placeholder='Choose Statistic Here',
                                              searchable=True,
-                                             style={'backgroundColor': '#EDEDED'}),
+                                             style={'backgroundColor': '#EDEDED'}))], style={'width': '25%'}),
                                 dbc.Row([dbc.Col(html.Br()),
-                                html.Div(dcc.Graph(id='BA-BAR', figure={'layout': {'height': 300}}))])
+                                html.Div(dcc.Graph(id='BA-BAR', figure={'layout': {'height': 300,
+                                                                                   'width': 420}}))])
                                          ])
                                 
 , className='dashboard-container')
@@ -189,7 +191,7 @@ def get_card_viz(player, statistic, batting):
     #fig.layout.template = 'plotly_dark'
     fig.layout.plot_bgcolor = '#323232'
     fig.layout.paper_bgcolor = '#323232'
-    fig.layout.font = {'color': '#FFFFFF'}
+    fig.layout.font = {'color': '#FFFFFF', 'size': 10}
     return ba_card, runs_card, hr_card, rbi_card, ops_card, fig
 
 if __name__ == '__main__':
