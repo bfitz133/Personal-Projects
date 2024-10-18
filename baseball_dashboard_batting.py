@@ -5,11 +5,12 @@ import pandas as pd # type: ignore
 import numpy as np # type: ignore
 import dash # type: ignore
 from dash import html # type: ignore
-from dash import dcc # type: ignore
+from dash import dcc, dash_table # type: ignore
 from dash.dependencies import Input, Output, State # type: ignore
 import plotly.express as px # type: ignore
 import pybaseball as base # type: ignore
 import dash_bootstrap_components as dbc # type: ignore
+import plotly.graph_objects as go # type: ignore
 base.cache.enable()
 
 # Create a dash application
@@ -55,6 +56,8 @@ app.layout = dbc.Container(html.Div(children=[html.H1('MLB Batting Dashboard',
                                          dbc.Row([dbc.Col(html.Div(dcc.Graph(id='BA-BAR', figure={'layout': {'height': 280,
                                                                                    'width': 350}})), width='auto'), 
                                                   dbc.Col(html.Div(dcc.Graph(id='RL-BAR', figure={'layout': {'height': 280,
+                                                                                   'width': 350}})), width='auto'),
+                                                  dbc.Col(html.Div(dcc.Graph(id='game-grid', figure={'layout': {'height': 280,
                                                                                    'width': 350}})), width='auto')])])
                                 
 , className='dashboard-container')
@@ -96,6 +99,7 @@ def set_year(chosen_year):
               Output(component_id='BA-BAR', component_property='figure'),
               Output(component_id='RL-BAR', component_property='figure'),
               Output(component_id='playerteam', component_property='children'),
+              Output(component_id='game-grid', component_property='figure'),
               Input(component_id='player-dropdown', component_property='value'),
               Input(component_id='statistic-dropdown', component_property='value'),
               Input('intermediate-value', 'data'))
@@ -130,10 +134,10 @@ def get_card_viz(player, statistic, batting):
              style = {"width": "12.5rem"}, class_name='card', inverse=True)
     
     #statcast data
-    dates_dict = {2021: ['2021-04-01', '2021-10-03'],
-                  2022: ['2022-03-31', '2022-10-02'],
-                  2023: ['2023-03-30', '2023-10-01'],
-                  2024: ['2024-03-20', '2024-09-30']}
+    dates_dict = {2021: ['2021-03-30', '2021-10-04'],
+                  2022: ['2022-03-30', '2022-10-03'],
+                  2023: ['2023-03-29', '2023-10-02'],
+                  2024: ['2024-03-19', '2024-10-02']}
     
     statcast_player = base.statcast_batter(start_dt=dates_dict[year][0],
                                            end_dt=dates_dict[year][1],
@@ -141,9 +145,11 @@ def get_card_viz(player, statistic, batting):
     
     #drop nulls
     statcast_player = statcast_player.dropna(how='all', axis=0)
+    statcast_player = statcast_player[statcast_player['game_type'] == 'R']
     
     #add month call for further analysis
     statcast_player['Month'] = pd.to_datetime(statcast_player['game_date']).dt.month
+    statcast_player['Walk'] = statcast_player['events'].apply(lambda x: 1 if x =='walk' else 0)
     statcast_player['Hit'] = statcast_player['events'].apply(lambda x: 1 if x in ['single', 'double', 'triple', 'home_run'] else 0)
     
     #drop nulls in events
@@ -156,21 +162,25 @@ def get_card_viz(player, statistic, batting):
             val = 1
         elif row['events'].__contains__('error'):
             val = 1
+        elif row['events'].__contains__('double_play'):
+            val = 1
+        elif row['events'].__contains__('fielders_choice'):
+            val = 1
         else:
             val = 0
         return val
 
-    statcast_player['At Bats'] = statcast_player.apply(f, axis=1)
+    statcast_player['At_Bats'] = statcast_player.apply(f, axis=1)
     
     #monthly statistic graph
     
     #batting average monthly
-    statcast_ba = statcast_player[['Month','Hit', 'At Bats']].groupby(['Month']).sum()
-    statcast_ba['BA'] = statcast_ba['Hit']/statcast_ba['At Bats']
+    statcast_ba = statcast_player[['Month','Hit', 'At_Bats', 'Walk']].groupby(['Month']).sum()
+    statcast_ba['BA'] = statcast_ba['Hit']/statcast_ba['At_Bats']
     
     #batting average Right/Left
-    statcast_ba_rl = statcast_player[['p_throws', 'Hit', 'At Bats']].groupby('p_throws').sum()
-    statcast_ba_rl['BA'] = statcast_ba_rl['Hit']/statcast_ba_rl['At Bats']
+    statcast_ba_rl = statcast_player[['p_throws', 'Hit', 'At_Bats']].groupby('p_throws').sum()
+    statcast_ba_rl['BA'] = statcast_ba_rl['Hit']/statcast_ba_rl['At_Bats']
     
     
     statcast_ba = statcast_ba.reset_index()
@@ -203,7 +213,31 @@ def get_card_viz(player, statistic, batting):
         x_rl = statcast_hr_count_rl['Hit']
         y_rl = statcast_hr_count_rl['p_throws']
         title_val_rl = 'Home Runs R/L Split'
+        
+    #game log grid
+    statcast_grid = statcast_player[['game_pk', 'game_date', 'Hit', 'At_Bats', 'Walk']].groupby(['game_pk', 'game_date']).sum()
+    statcast_grid = statcast_grid.reset_index()
     
+    fig_grid = go.Figure(data=[go.Table(
+    header=dict(values=list(statcast_grid.columns),
+                fill_color='black',
+                align='left'),
+    columnwidth = [70, 70, 70, 70, 70],
+    cells=dict(values=[statcast_grid.game_pk, 
+                       statcast_grid.game_date, 
+                       statcast_grid.Hit, 
+                       statcast_grid.At_Bats,
+                       statcast_grid.Walk],
+               fill_color='#323232',
+               align='left',
+               height=30,
+               ))])
+    
+    
+    statcast_grid_data = statcast_grid.to_dict('records')
+    statcast_grid_cols = [{"name": i, "id": i} for i in statcast_grid.columns]
+    
+    #monthly and right/left figs
     fig_rl = px.bar(x=x_rl, y=y_rl, text =x_rl, title=title_val_rl,
                     orientation='h', color=x_rl, color_continuous_scale=['yellow', 'green'],
                     labels={'x': y_label, 'y': 'Right/Left'})
@@ -224,7 +258,14 @@ def get_card_viz(player, statistic, batting):
     fig_rl.layout.plot_bgcolor = '#323232'
     fig_rl.layout.paper_bgcolor = '#323232'
     fig_rl.layout.font = {'color': '#FFFFFF', 'size': 9}
-    return ba_card, runs_card, hr_card, rbi_card, ops_card, fig, fig_rl, team
+    
+    fig_grid.layout.plot_bgcolor = '#323232'
+    fig_grid.layout.paper_bgcolor = '#323232'
+    fig_grid.layout.font = {'color': '#FFFFFF', 'size': 9}
+    fig_grid.update_layout(width=350, height=280)
+    fig_grid.update_layout(margin=dict(l=20, r=20, t=20, b=20))
+    
+    return ba_card, runs_card, hr_card, rbi_card, ops_card, fig, fig_rl, team, fig_grid
 
 if __name__ == '__main__':
     app.run_server()
