@@ -19,6 +19,8 @@ app = dash.Dash(__name__, external_stylesheets=[dbc.themes.SIMPLEX])
 app.layout = dbc.Container(html.Div(children=[html.H1('MLB Batting Dashboard',
                                         style={'textAlign': 'center', 'color': '#ffffff',
                                                'font-size': 40}),
+                                              html.H4('', style={'textAlign': 'left', 'color': '#ffff00',
+                                               'font-size': 18}, id='playerteam'),
                                               dcc.Dropdown(id='year-dropdown',
                                                            options=[{'label': '2021', 'value': 2021},
                                                                     {'label': '2022', 'value': 2022},
@@ -50,9 +52,9 @@ app.layout = dbc.Container(html.Div(children=[html.H1('MLB Batting Dashboard',
                                              searchable=True,
                                              style={'backgroundColor': '#EDEDED'}))], style={'width': '25%'}),
                                 (html.Br()),
-                                         dbc.Row([dbc.Col(html.Div(dcc.Graph(id='BA-BAR', figure={'layout': {'height': 300,
+                                         dbc.Row([dbc.Col(html.Div(dcc.Graph(id='BA-BAR', figure={'layout': {'height': 280,
                                                                                    'width': 350}})), width='auto'), 
-                                                  dbc.Col(html.Div(dcc.Graph(id='RL-BAR', figure={'layout': {'height': 300,
+                                                  dbc.Col(html.Div(dcc.Graph(id='RL-BAR', figure={'layout': {'height': 280,
                                                                                    'width': 350}})), width='auto')])])
                                 
 , className='dashboard-container')
@@ -93,6 +95,7 @@ def set_year(chosen_year):
               Output(component_id='ops_card', component_property='children'),
               Output(component_id='BA-BAR', component_property='figure'),
               Output(component_id='RL-BAR', component_property='figure'),
+              Output(component_id='playerteam', component_property='children'),
               Input(component_id='player-dropdown', component_property='value'),
               Input(component_id='statistic-dropdown', component_property='value'),
               Input('intermediate-value', 'data'))
@@ -101,6 +104,7 @@ def get_card_viz(player, statistic, batting):
     #filter for selected player
     current_batting = pd.read_json(io.StringIO(batting), orient='split')
     selected_player = current_batting[current_batting['Name'] == player]
+    team = 'Team: ' + selected_player['Tm'].iloc[0]
     year = int(current_batting['Year'].iloc[0])
     
     #batting average
@@ -220,7 +224,7 @@ def get_card_viz(player, statistic, batting):
     fig_rl.layout.plot_bgcolor = '#323232'
     fig_rl.layout.paper_bgcolor = '#323232'
     fig_rl.layout.font = {'color': '#FFFFFF', 'size': 9}
-    return ba_card, runs_card, hr_card, rbi_card, ops_card, fig, fig_rl
+    return ba_card, runs_card, hr_card, rbi_card, ops_card, fig, fig_rl, team
 
 if __name__ == '__main__':
     app.run_server()
