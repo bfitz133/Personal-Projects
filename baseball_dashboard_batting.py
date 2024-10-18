@@ -49,10 +49,11 @@ app.layout = dbc.Container(html.Div(children=[html.H1('MLB Batting Dashboard',
                                              value='Batting Average', placeholder='Choose Statistic Here',
                                              searchable=True,
                                              style={'backgroundColor': '#EDEDED'}))], style={'width': '25%'}),
-                                dbc.Row([dbc.Col(html.Br()),
-                                html.Div(dcc.Graph(id='BA-BAR', figure={'layout': {'height': 300,
-                                                                                   'width': 420}}))])
-                                         ])
+                                (html.Br()),
+                                         dbc.Row([dbc.Col(html.Div(dcc.Graph(id='BA-BAR', figure={'layout': {'height': 300,
+                                                                                   'width': 350}})), width='auto'), 
+                                                  dbc.Col(html.Div(dcc.Graph(id='RL-BAR', figure={'layout': {'height': 300,
+                                                                                   'width': 350}})), width='auto')])])
                                 
 , className='dashboard-container')
     
@@ -91,6 +92,7 @@ def set_year(chosen_year):
               Output(component_id='rbi_card', component_property='children'),
               Output(component_id='ops_card', component_property='children'),
               Output(component_id='BA-BAR', component_property='figure'),
+              Output(component_id='RL-BAR', component_property='figure'),
               Input(component_id='player-dropdown', component_property='value'),
               Input(component_id='statistic-dropdown', component_property='value'),
               Input('intermediate-value', 'data'))
@@ -158,10 +160,17 @@ def get_card_viz(player, statistic, batting):
     
     #monthly statistic graph
     
-    #batting average
+    #batting average monthly
     statcast_ba = statcast_player[['Month','Hit', 'At Bats']].groupby(['Month']).sum()
     statcast_ba['BA'] = statcast_ba['Hit']/statcast_ba['At Bats']
+    
+    #batting average Right/Left
+    statcast_ba_rl = statcast_player[['p_throws', 'Hit', 'At Bats']].groupby('p_throws').sum()
+    statcast_ba_rl['BA'] = statcast_ba_rl['Hit']/statcast_ba_rl['At Bats']
+    
+    
     statcast_ba = statcast_ba.reset_index()
+    statcast_ba_rl = statcast_ba_rl.reset_index()
     pd.options.display.float_format = '{:.3f}'.format
     
     #home runs
@@ -170,29 +179,48 @@ def get_card_viz(player, statistic, batting):
     statcast_hr_count = statcast_hr[['Month','Hit']].groupby(['Month']).sum()
     statcast_hr_count = statcast_hr_count.reset_index()
     
+    #home runs Right/Left
+    statcast_hr_count_rl = statcast_hr[['p_throws', 'Hit']].groupby(['p_throws']).sum()
+    statcast_hr_count_rl = statcast_hr_count_rl.reset_index()
+    
     if statistic == 'Batting Average':
         x_val = statcast_ba['Month']
         y_val = statcast_ba['BA']
         title_val = 'Batting Average by Month'
         y_label = 'Batting Average'
+        x_rl = statcast_ba_rl['BA']
+        y_rl = statcast_ba_rl['p_throws']
+        title_val_rl = 'Batting Average R/L Split'
     else:
         x_val = statcast_hr_count['Month']
         y_val = statcast_hr_count['Hit']
         title_val = 'Home Runs by Month'
         y_label = 'Home Runs'
-   
+        x_rl = statcast_hr_count_rl['Hit']
+        y_rl = statcast_hr_count_rl['p_throws']
+        title_val_rl = 'Home Runs R/L Split'
+    
+    fig_rl = px.bar(x=x_rl, y=y_rl, text =x_rl, title=title_val_rl,
+                    orientation='h', color=x_rl, color_continuous_scale=['yellow', 'green'],
+                    labels={'x': y_label, 'y': 'Right/Left'})
     fig = px.bar(x=x_val, y=y_val, text = y_val,
                  title=title_val, labels={'x': 'Month', 'y': y_label},
                 color=y_val, color_continuous_scale=['orange', 'yellow', 'green'])
     if statistic == 'Batting Average':
         fig.update_traces(texttemplate = '%{text:.3f}', textposition='inside', insidetextanchor='end', name=y_label)
+        fig_rl.update_traces(texttemplate = '%{text:.3f}', textposition='inside', insidetextanchor='end', name='Batting Average')
+        
     fig.add_scatter(x=x_val, y=y_val, mode='lines', name=y_label,
                     marker=dict(color='white'), showlegend=False)
     #fig.layout.template = 'plotly_dark'
     fig.layout.plot_bgcolor = '#323232'
     fig.layout.paper_bgcolor = '#323232'
-    fig.layout.font = {'color': '#FFFFFF', 'size': 10}
-    return ba_card, runs_card, hr_card, rbi_card, ops_card, fig
+    fig.layout.font = {'color': '#FFFFFF', 'size': 9}
+    
+    fig_rl.layout.plot_bgcolor = '#323232'
+    fig_rl.layout.paper_bgcolor = '#323232'
+    fig_rl.layout.font = {'color': '#FFFFFF', 'size': 9}
+    return ba_card, runs_card, hr_card, rbi_card, ops_card, fig, fig_rl
 
 if __name__ == '__main__':
     app.run_server()
