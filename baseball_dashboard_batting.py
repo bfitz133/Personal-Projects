@@ -217,20 +217,28 @@ def get_card_viz(player, statistic, batting):
     #game log grid
     statcast_grid = statcast_player[['game_pk', 'game_date', 'Hit', 'At_Bats', 'Walk']].groupby(['game_pk', 'game_date']).sum()
     statcast_grid = statcast_grid.reset_index()
+    statcast_grid.drop('game_pk', axis=1, inplace=True)
+    statcast_grid = statcast_grid.sort_values(by=['game_date'], ascending=False)
+    statcast_grid = statcast_grid.rename(columns={'game_date': 'Game_Date',
+                                                  'Hit': 'Hits',
+                                                  'At_Bats': 'ABs',
+                                                  'Walk': 'Walks'})
     
     fig_grid = go.Figure(data=[go.Table(
     header=dict(values=list(statcast_grid.columns),
                 fill_color='black',
-                align='left'),
-    columnwidth = [70, 70, 70, 70, 70],
-    cells=dict(values=[statcast_grid.game_pk, 
-                       statcast_grid.game_date, 
-                       statcast_grid.Hit, 
-                       statcast_grid.At_Bats,
-                       statcast_grid.Walk],
+                align='left',
+                font={'size': 10,
+                      'family': 'Arial Black'}),
+    columnwidth = [70, 70, 70, 70],
+    cells=dict(values=[statcast_grid.Game_Date, 
+                       statcast_grid.Hits, 
+                       statcast_grid.ABs,
+                       statcast_grid.Walks],
                fill_color='#323232',
                align='left',
                height=30,
+               font={'size': 9},
                ))])
     
     
@@ -261,9 +269,9 @@ def get_card_viz(player, statistic, batting):
     
     fig_grid.layout.plot_bgcolor = '#323232'
     fig_grid.layout.paper_bgcolor = '#323232'
-    fig_grid.layout.font = {'color': '#FFFFFF', 'size': 9}
+    fig_grid.layout.font = {'color': '#FFFFFF'}
     fig_grid.update_layout(width=350, height=280)
-    fig_grid.update_layout(margin=dict(l=20, r=20, t=20, b=20))
+    fig_grid.update_layout(margin=dict(l=0, r=0, t=0, b=0))
     
     return ba_card, runs_card, hr_card, rbi_card, ops_card, fig, fig_rl, team, fig_grid
 
