@@ -11,8 +11,14 @@ import plotly.express as px # type: ignore
 import pybaseball as base # type: ignore
 import dash_bootstrap_components as dbc # type: ignore
 import plotly.graph_objects as go # type: ignore
+from datetime import datetime
 base.cache.enable()
 
+#begin and end dates for each mlb season
+dates_dict = {2021: ['2021-03-30', '2021-10-04'],
+                  2022: ['2022-03-30', '2022-10-03'],
+                  2023: ['2023-03-29', '2023-10-02'],
+                  2024: ['2024-03-19', '2024-10-02']}
 # Create a dash application
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.SIMPLEX])
 
@@ -30,13 +36,13 @@ app.layout = dbc.Container(html.Div(children=[html.H1('MLB Batting Dashboard',
                                                            value=2024,
                                                            placeholder='Select Year Here',
                                                            searchable=True,
-                                                           style={'backgroundColor': '#EDEDED'}),
+                                                           style={'backgroundColor': '#FFFFFF'}),
                                   dcc.Dropdown(id='player-dropdown', 
                                   options=[],
                                   value='Shohei Ohtani',
                                   placeholder="Select an MLB Player Here",
                                   searchable=True,
-                                  style={'backgroundColor': '#EDEDED'}),
+                                  style={'backgroundColor': '#FFFFFF'}),
                                   dcc.Store(id='intermediate-value', storage_type='session'),
                                 html.Br(),
                                 dbc.Row([dbc.Col(dbc.Card(id='batting_average_card', style = {"width": "12.5rem"}), width='auto'),
@@ -51,7 +57,12 @@ app.layout = dbc.Container(html.Div(children=[html.H1('MLB Batting Dashboard',
                                                       {'label': 'Home Runs', 'value': 'Home Runs'}],
                                              value='Batting Average', placeholder='Choose Statistic Here',
                                              searchable=True,
-                                             style={'backgroundColor': '#EDEDED'}))], style={'width': '25%'}),
+                                             style={'backgroundColor': '#FFFFFF', 'width': '12.5rem'}), width='auto'), 
+                                    dbc.Col(dcc.DatePickerRange(id='my-date-picker', start_date='', end_date='', 
+                                                                 min_date_allowed='', max_date_allowed='',
+                                                                 style={'width': '25rem',
+                                                                        'backgroundColor': '#FFFFFF'}), width='auto')],
+                                    style={'width': '60%'}),
                                 (html.Br()),
                                          dbc.Row([dbc.Col(html.Div(dcc.Graph(id='BA-BAR', figure={'layout': {'height': 280,
                                                                                    'width': 350}})), width='auto'), 
@@ -66,6 +77,10 @@ app.layout = dbc.Container(html.Div(children=[html.H1('MLB Batting Dashboard',
 # Callback Function for Year Selection
 @app.callback(Output(component_id='player-dropdown', component_property='options'),
               Output('intermediate-value','data'),
+              Output(component_id='my-date-picker', component_property='start_date'),
+              Output(component_id='my-date-picker', component_property='end_date'),
+              Output(component_id='my-date-picker', component_property='min_date_allowed'),
+              Output(component_id='my-date-picker', component_property='max_date_allowed'),
               Input(component_id='year-dropdown', component_property='value'))
 
 def set_year(chosen_year):
@@ -74,6 +89,10 @@ def set_year(chosen_year):
     current_batting['Year'] = chosen_year
     current_batting['mlbID2'] = current_batting['mlbID']
     current_batting = current_batting.set_index('mlbID')
+    
+    #output to use as input for dcc.datepicker
+    min_game_date = dates_dict[chosen_year][0]
+    max_game_date = dates_dict[chosen_year][1]
 
 
     # create list of dictionaries (key value pairs) of the players name to be used in the dropdown
@@ -88,7 +107,9 @@ def set_year(chosen_year):
         dropdown_dict['value'] = player
         dropdown_list.append(dropdown_dict)
         dropdown_dict = {}
-    return dropdown_list, current_batting.to_json(date_format='iso', orient='split')
+    return dropdown_list, current_batting.to_json(date_format='iso', orient='split'), min_game_date, max_game_date, min_game_date, max_game_date
+
+
     
 # Callback Function for Batting Visuals
 @app.callback(Output(component_id='batting_average_card', component_property='children'),
@@ -102,9 +123,11 @@ def set_year(chosen_year):
               Output(component_id='game-grid', component_property='figure'),
               Input(component_id='player-dropdown', component_property='value'),
               Input(component_id='statistic-dropdown', component_property='value'),
-              Input('intermediate-value', 'data'))
+              Input('intermediate-value', 'data'),
+              Input(component_id= 'my-date-picker', component_property='start_date'),
+              Input(component_id='my-date-picker', component_property='end_date'))
 
-def get_card_viz(player, statistic, batting):
+def get_card_viz(player, statistic, batting, start_date, end_date):
     #filter for selected player
     current_batting = pd.read_json(io.StringIO(batting), orient='split')
     selected_player = current_batting[current_batting['Name'] == player]
@@ -134,10 +157,6 @@ def get_card_viz(player, statistic, batting):
              style = {"width": "12.5rem"}, class_name='card', inverse=True)
     
     #statcast data
-    dates_dict = {2021: ['2021-03-30', '2021-10-04'],
-                  2022: ['2022-03-30', '2022-10-03'],
-                  2023: ['2023-03-29', '2023-10-02'],
-                  2024: ['2024-03-19', '2024-10-02']}
     
     statcast_player = base.statcast_batter(start_dt=dates_dict[year][0],
                                            end_dt=dates_dict[year][1],
@@ -146,6 +165,13 @@ def get_card_viz(player, statistic, batting):
     #drop nulls
     statcast_player = statcast_player.dropna(how='all', axis=0)
     statcast_player = statcast_player[statcast_player['game_type'] == 'R']
+    
+    #date picker filtering
+    start_date = datetime.strptime(start_date, '%Y-%m-%d')
+    end_date = datetime.strptime(end_date, '%Y-%m-%d')
+    statcast_player['game_date_date'] = pd.to_datetime(statcast_player['game_date'])
+    statcast_player = statcast_player[statcast_player['game_date_date'] >= start_date]
+    statcast_player = statcast_player[statcast_player['game_date_date'] <= end_date]
     
     #add month call for further analysis
     statcast_player['Month'] = pd.to_datetime(statcast_player['game_date']).dt.month
