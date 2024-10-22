@@ -1,0 +1,38 @@
+.dashboard-container {
+    width: 1400px;
+    height: 750px;
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 0px;
+    margin-bottom: 0px;
+    background-color: #000000;
+    border: 1px solid #000000;
+    border-radius: 10px;
+}
+.DateInput_input, .DateInput_input_1 {
+    Height: 35px;
+    font-size: 16px;
+    background-color: #FFFFFF
+  }
+
+.card-value {
+    font-weight: bold;
+    font-size: 24px;
+    margin-top: 0;
+    margin-bottom: 0;
+  }
+
+.card {
+    background-color: #323232;
+    border-color: #323232;
+}
+
+body {
+    background-color: #000000;
+}
+
+.dropdown-class-2 {
+  width:100% !important;
+  border: 2px solid black;
+  border-radius:20px;
+}
