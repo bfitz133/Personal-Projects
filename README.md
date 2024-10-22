@@ -1,5 +1,5 @@
 # Personal Projects
 
-## Editing this file
+### Will primarily consists of python projects
 
-It's a markdown file in this repository.
+Currently primary focus is on the baseball_dashboard_batting.py file
