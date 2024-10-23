@@ -51,7 +51,7 @@ app.layout = dbc.Container(html.Div(children=[html.H1('MLB Batting Dashboard',
                                 dbc.Col(dbc.Card(id='rbi_card', style = {"width": "12.5rem"}), width='auto'),
                                 dbc.Col(dbc.Card(id='ops_card', style = {"width": "12.5rem"}), width='auto')]),
                                 html.Br(), dbc.Row([dbc.Col(html.P('Select Date Range to Filter Both Visuals:   ',
-                                        style={'textAlign': 'center', 'color': '#ffffff',
+                                        style={'textAlign': 'right', 'color': '#ffffff',
                                                'font-size': 14})), dbc.Col(dcc.DatePickerRange(id='my-date-picker', start_date='', end_date='', 
                                                                  min_date_allowed='', max_date_allowed='',
                                                                  style={'backgroundColor': '#FFFFFF',
@@ -73,12 +73,16 @@ app.layout = dbc.Container(html.Div(children=[html.H1('MLB Batting Dashboard',
                                                                                          {'label': 'Count', 'value': 'Batter_Count'}],
                                                                                 value='Month', placeholder='choose grouping',
                                                                                 style={'width': '21rem','height': '25px', 'font-size': 14,
-                                                                        'backgroundColor': '#FFFFFF'}), width='auto')],
-                                    style={'width': '85%'})),
+                                                                        'backgroundColor': '#FFFFFF'}), width='auto'), 
+                                    dbc.Col(html.H3('Game Log',
+                                        style={'textAlign': 'center', 'color': '#ffffff',
+                                               'font-size': 18,
+                                               'font-family': 'Arial Black'}))],
+                                    style={'width': '100%'})),
                                 (html.Br()),
-                                         dbc.Row([dbc.Col(html.Div(dcc.Graph(id='BA-BAR', figure={'layout': {'height': 250,
+                                         dbc.Row([dbc.Col(html.Div(dcc.Graph(id='BA-BAR', figure={'layout': {'height': 240,
                                                                                    'width': 700}})), width='auto'), 
-                                                  dbc.Col(html.Div(dcc.Graph(id='game-grid', figure={'layout': {'height': 250,
+                                                  dbc.Col(html.Div(dcc.Graph(id='game-grid', figure={'layout': {'height': 240,
                                                                                    'width': 350}})), width='auto')])])
                                 
 , className='dashboard-container')
@@ -183,7 +187,7 @@ def get_card_viz(player, statistic, batting, start_date, end_date, groupon):
     statcast_player = statcast_player[statcast_player['game_date_date'] >= start_date]
     statcast_player = statcast_player[statcast_player['game_date_date'] <= end_date]
     
-    #add month call for further analysis
+    #add month, walk and hit columns for further analysis
     statcast_player['Month'] = pd.to_datetime(statcast_player['game_date']).dt.month
     statcast_player['Walk'] = statcast_player['events'].apply(lambda x: 1 if x =='walk' else 0)
     statcast_player['Hit'] = statcast_player['events'].apply(lambda x: 1 if x in ['single', 'double', 'triple', 'home_run'] else 0)
@@ -191,6 +195,7 @@ def get_card_viz(player, statistic, batting, start_date, end_date, groupon):
     #drop nulls in events
     statcast_player = statcast_player.dropna(axis=0, subset=['events'])
     
+    #create at bats column
     def f(row):
         if row['events'] in ['single', 'double', 'triple', 'home_run']:
             val = 1
@@ -208,11 +213,10 @@ def get_card_viz(player, statistic, batting, start_date, end_date, groupon):
 
     statcast_player['At_Bats'] = statcast_player.apply(f, axis=1)
     
-    #Batter_Count
+    #Batter_Count column
     statcast_player['Batter_Count'] = statcast_player['balls'].astype(str) + '-' + statcast_player['strikes'].astype(str)
-    #monthly statistic graph
     
-    #batting average monthly
+    #batting average calc grouped on choice by user with group dcc dropdown component
     statcast_ba = statcast_player[[groupon,'Hit', 'At_Bats', 'Walk']].groupby([groupon]).sum()
     statcast_ba['BA'] = statcast_ba['Hit']/statcast_ba['At_Bats']
     
@@ -220,12 +224,14 @@ def get_card_viz(player, statistic, batting, start_date, end_date, groupon):
     pd.options.display.float_format = '{:.3f}'.format
     
     
-    #home runs
+    #home runs grouped on choice by user with group dcc dropdown component
     statcast_hr = statcast_player[statcast_player['events'] == 'home_run']
 
     statcast_hr_count = statcast_hr[[groupon,'Hit']].groupby([groupon]).sum()
     statcast_hr_count = statcast_hr_count.reset_index()
     
+    #setting values/labels in bar chart viz to be dynamic based on statistic and grouping
+    #                                                                  chosen by the user
     if statistic == 'Batting Average':
         x_val = statcast_ba[groupon]
         y_val = statcast_ba['BA']
@@ -248,26 +254,21 @@ def get_card_viz(player, statistic, batting, start_date, end_date, groupon):
                                                   'At_Bats': 'ABs',
                                                   'Walk': 'Walks'})
     
-    fig_grid = go.Figure(data=[go.Table(
-    header=dict(values=list(statcast_grid.columns),
+    fig_grid = go.Figure(data=[go.Table(header=dict(values=list(statcast_grid.columns),
                 fill_color='black',
                 align='left',
                 font={'size': 10,
                       'family': 'Arial Black'}),
-    columnwidth = [70, 70, 70, 70],
-    cells=dict(values=[statcast_grid.Game_Date, 
-                       statcast_grid.Hits, 
-                       statcast_grid.ABs,
-                       statcast_grid.Walks],
-               fill_color='#323232',
-               align='left',
-               height=30,
-               font={'size': 9},
+                columnwidth = [70, 70, 70, 70],
+                cells=dict(values=[statcast_grid.Game_Date, 
+                                   statcast_grid.Hits, 
+                                   statcast_grid.ABs,
+                                   statcast_grid.Walks],
+                fill_color='#323232',
+                align='left',
+                height=30,
+                font={'size': 9}
                ))])
-    
-    
-    statcast_grid_data = statcast_grid.to_dict('records')
-    statcast_grid_cols = [{"name": i, "id": i} for i in statcast_grid.columns]
     
     #fig which is grouped by choice of dashboard user
     
@@ -276,10 +277,10 @@ def get_card_viz(player, statistic, batting, start_date, end_date, groupon):
                 color=y_val, color_continuous_scale=['orange', 'yellow', 'green'])
     if statistic == 'Batting Average':
         fig.update_traces(texttemplate = '%{text:.3f}', textposition='inside', insidetextanchor='end', name=y_label)
-        
-    fig.add_scatter(x=x_val, y=y_val, mode='lines', name=y_label,
+    
+    fig.add_scatter(x=x_val, y=y_val, mode='lines', name=y_label, 
                     marker=dict(color='white'), showlegend=False)
-    #fig.layout.template = 'plotly_dark'
+    
     fig.layout.plot_bgcolor = '#323232'
     fig.layout.paper_bgcolor = '#323232'
     fig.layout.font = {'color': '#FFFFFF', 'size': 9}
@@ -287,7 +288,6 @@ def get_card_viz(player, statistic, batting, start_date, end_date, groupon):
     fig_grid.layout.plot_bgcolor = '#323232'
     fig_grid.layout.paper_bgcolor = '#323232'
     fig_grid.layout.font = {'color': '#FFFFFF'}
-    fig_grid.update_layout(width=350, height=250)
     fig_grid.update_layout(margin=dict(l=0, r=0, t=0, b=0))
     
     return ba_card, runs_card, hr_card, rbi_card, ops_card, fig, team, fig_grid
