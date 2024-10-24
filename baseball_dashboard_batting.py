@@ -218,29 +218,38 @@ def get_card_viz(player, statistic, batting, start_date, end_date, groupon):
     
     #batting average calc grouped on choice by user with group dcc dropdown component
     statcast_ba = statcast_player[[groupon,'Hit', 'At_Bats', 'Walk']].groupby([groupon]).sum()
+    pd.options.display.float_format = '{:.3f}'.format
     statcast_ba['BA'] = statcast_ba['Hit']/statcast_ba['At_Bats']
+    statcast_ba['Batting Average'] = statcast_ba['BA'] .map('{:.3f}'.format)
     
     statcast_ba = statcast_ba.reset_index()
-    pd.options.display.float_format = '{:.3f}'.format
+    
     
     
     #home runs grouped on choice by user with group dcc dropdown component
     statcast_hr = statcast_player[statcast_player['events'] == 'home_run']
+    statcast_hr = statcast_hr.rename(columns={'Hit': 'HR'})
 
-    statcast_hr_count = statcast_hr[[groupon,'Hit']].groupby([groupon]).sum()
+    statcast_hr_count = statcast_hr[[groupon,'HR']].groupby([groupon]).sum()
     statcast_hr_count = statcast_hr_count.reset_index()
     
     #setting values/labels in bar chart viz to be dynamic based on statistic and grouping
     #                                                                  chosen by the user
     if statistic == 'Batting Average':
-        x_val = statcast_ba[groupon]
-        y_val = statcast_ba['BA']
+        df = statcast_ba
+        x_val = groupon
+        y_val = 'BA'
+        hover_val = {'BA':False,
+                     'Batting Average': True,
+                    'At_Bats': True}
         title_val = 'Batting Average by ' + groupon
         y_label = 'Batting Average'
 
     else:
-        x_val = statcast_hr_count[groupon]
-        y_val = statcast_hr_count['Hit']
+        df = statcast_hr_count
+        x_val = groupon
+        y_val = 'HR'
+        hover_val = [y_val]
         title_val = 'Home Runs by ' + groupon
         y_label = 'Home Runs'
         
@@ -272,13 +281,15 @@ def get_card_viz(player, statistic, batting, start_date, end_date, groupon):
     
     #fig which is grouped by choice of dashboard user
     
-    fig = px.bar(x=x_val, y=y_val, text = y_val,
+    fig = px.bar(df, x=x_val, y=y_val, text = y_val,
                  title=title_val, labels={'x': groupon, 'y': y_label},
-                color=y_val, color_continuous_scale=['orange', 'yellow', 'green'])
+                color=y_val, color_continuous_scale=['orange', 'yellow', 'green'],
+                hover_name=groupon, hover_data=hover_val)
     if statistic == 'Batting Average':
-        fig.update_traces(texttemplate = '%{text:.3f}', textposition='inside', insidetextanchor='end', name=y_label)
+        fig.update_traces(texttemplate = '%{text:.3f}', textposition='inside', 
+                          insidetextanchor='end', name=y_label)
     
-    fig.add_scatter(x=x_val, y=y_val, mode='lines', name=y_label, 
+    fig.add_scatter(x=df[x_val], y=df[y_val], mode='lines', name=y_label, 
                     marker=dict(color='white'), showlegend=False)
     
     fig.layout.plot_bgcolor = '#323232'
