@@ -23,67 +23,93 @@ dates_dict = {2021: ['2021-03-30', '2021-10-04'],
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.SIMPLEX])
 
 # Create an app layout
-app.layout = dbc.Container(html.Div(children=[html.H1('MLB Batting Dashboard',
-                                        style={'textAlign': 'center', 'color': '#ffffff',
-                                               'font-size': 40}),
-                                              html.H4('', style={'textAlign': 'left', 'color': '#ffff00',
-                                               'font-size': 18}, id='playerteam'),
-                                              dcc.Dropdown(id='year-dropdown',
-                                                           options=[{'label': '2021', 'value': 2021},
-                                                                    {'label': '2022', 'value': 2022},
-                                                                    {'label': '2023', 'value': 2023},
-                                                                    {'label': '2024', 'value': 2024}],
-                                                           value=2024,
-                                                           placeholder='Select Year Here',
-                                                           searchable=True,
-                                                           style={'backgroundColor': '#FFFFFF'}),
-                                  dcc.Dropdown(id='player-dropdown', 
-                                  options=[],
-                                  value='Shohei Ohtani',
-                                  placeholder="Select an MLB Player Here",
-                                  searchable=True,
-                                  style={'backgroundColor': '#FFFFFF'}),
-                                  dcc.Store(id='intermediate-value', storage_type='session'),
-                                html.Br(),
-                                dbc.Row([dbc.Col(dbc.Card(id='batting_average_card', style = {"width": "12.5rem"}), width='auto'),
-                                dbc.Col(dbc.Card(id='runs_card', style = {"width": "12.5rem"}), width='auto'),         
-                                dbc.Col(dbc.Card(id='home_runs_card', style = {"width": "12.5rem"}), width='auto'),
-                                dbc.Col(dbc.Card(id='rbi_card', style = {"width": "12.5rem"}), width='auto'),
-                                dbc.Col(dbc.Card(id='ops_card', style = {"width": "12.5rem"}), width='auto')]),
-                                html.Br(), dbc.Row([dbc.Col(html.P('Select Date Range to Filter Both Visuals:   ',
-                                        style={'textAlign': 'right', 'color': '#ffffff',
-                                               'font-size': 14})), dbc.Col(dcc.DatePickerRange(id='my-date-picker', start_date='', end_date='', 
-                                                                 min_date_allowed='', max_date_allowed='',
-                                                                 style={'backgroundColor': '#FFFFFF',
-                                                                         'textAlign': 'center'},))],style={'width': '100%',
-                                                                         'display': 'flex', 'align-items': 'center', 'justify-content': 'center'}),
-                                html.Br(), html.Div(
-                                dbc.Row(
-                                    [dbc.Col(dcc.Dropdown(id='statistic-dropdown',
-                                             options=[{'label': 'Batting Average', 'value': 'Batting Average'},
-                                                      {'label': 'Home Runs', 'value': 'Home Runs'}],
-                                             value='Batting Average', placeholder='Choose Statistic Here',
-                                             searchable=True,
-                                             style={'backgroundColor': '#FFFFFF', 'width': '21rem', 'height': '25px', 'font-size': 14}), width='auto'), 
+app.layout = dbc.Container(html.Div(
+    children=[  html.H1('MLB Batting Dashboard',
+                    style={'textAlign': 'center', 'color': '#ffffff', 'font-size': 40}),
+              
+                html.H4('', id='playerteam',
+                    style={'textAlign': 'left', 'color': '#ffff00', 'font-size': 18}),
+              
+                dcc.Dropdown(id='year-dropdown',
+                    options=[{'label': '2021', 'value': 2021},
+                             {'label': '2022', 'value': 2022},
+                             {'label': '2023', 'value': 2023},
+                             {'label': '2024', 'value': 2024}],
+                    value=2024,
+                    placeholder='Select Year Here',
+                    searchable=True,
+                    style={'backgroundColor': '#FFFFFF'}),
+              
+                dcc.Dropdown(id='player-dropdown', 
+                    options=[],
+                    value='Shohei Ohtani',
+                    placeholder="Select an MLB Player Here",
+                    searchable=True,
+                    style={'backgroundColor': '#FFFFFF'}),
+                
+                dcc.Store(id='intermediate-value', storage_type='session'),
+                
+                html.Br(),
+                                
+                dbc.Row([
+                    dbc.Col(dbc.Card(id='batting_average_card', style = {"width": "12.5rem"}), width='auto'),
+                    
+                    dbc.Col(dbc.Card(id='runs_card', style = {"width": "12.5rem"}), width='auto'), 
+                            
+                    dbc.Col(dbc.Card(id='home_runs_card', style = {"width": "12.5rem"}), width='auto'),
+                    
+                    dbc.Col(dbc.Card(id='rbi_card', style = {"width": "12.5rem"}), width='auto'),
+                    
+                    dbc.Col(dbc.Card(id='ops_card', style = {"width": "12.5rem"}), width='auto')]),
+                
+                html.Br(), 
+                
+                dbc.Row([
+                    dbc.Col(html.P('Select Date Range to Filter Both Visuals:   ',
+                                    style={'textAlign': 'right', 'color': '#ffffff', 'font-size': 14})), 
+                    
+                    dbc.Col(dcc.DatePickerRange(id='my-date-picker', start_date='', 
+                                                end_date='', min_date_allowed='', max_date_allowed='',
+                                                style={'backgroundColor': '#FFFFFF', 'textAlign': 'center'},))],
+                        
+                        style={'width': '100%', 'display': 'flex', 
+                               'align-items': 'center', 'justify-content': 'center'}),
+                
+                html.Br(), 
+                
+                html.Div(
+                dbc.Row([
+                    dbc.Col(dcc.Dropdown(id='statistic-dropdown',
+                                        options=[{'label': 'Batting Average', 'value': 'Batting Average'},
+                                                 {'label': 'Home Runs', 'value': 'Home Runs'}],
+                                        value='Batting Average', placeholder='Choose Statistic Here',
+                                        searchable=True,
+                                        style={'backgroundColor': '#FFFFFF', 'width': '21rem', 
+                                               'height': '25px', 'font-size': 14}), width='auto'), 
                                     
-                                    dbc.Col(dcc.Dropdown(id='grouping',
-                                                                                options=[{'label': 'Month', 'value': 'Month'},
-                                                                                         {'label': 'R/L Split', 'value': 'p_throws'},
-                                                                                         {'label': 'Pitch Type', 'value': 'pitch_type'},
-                                                                                         {'label': 'Count', 'value': 'Batter_Count'}],
-                                                                                value='Month', placeholder='choose grouping',
-                                                                                style={'width': '21rem','height': '25px', 'font-size': 14,
-                                                                        'backgroundColor': '#FFFFFF'}), width='auto'), 
-                                    dbc.Col(html.H3('Game Log',
+                    dbc.Col(dcc.Dropdown(id='grouping',
+                                        options=[{'label': 'Month', 'value': 'Month'},
+                                                 {'label': 'R/L Split', 'value': 'p_throws'},
+                                                 {'label': 'Pitch Type', 'value': 'pitch_type'},
+                                                 {'label': 'Count', 'value': 'Batter_Count'}],
+                                        value='Month', placeholder='choose grouping',
+                                        style={'width': '21rem','height': '25px', 'font-size': 14,
+                                                'backgroundColor': '#FFFFFF'}), width='auto'), 
+                    
+                    dbc.Col(html.H3('Game Log',
                                         style={'textAlign': 'center', 'color': '#ffffff',
                                                'font-size': 18,
                                                'font-family': 'Arial Black'}))],
-                                    style={'width': '100%'})),
-                                (html.Br()),
-                                         dbc.Row([dbc.Col(html.Div(dcc.Graph(id='BA-BAR', figure={'layout': {'height': 240,
-                                                                                   'width': 700}})), width='auto'), 
-                                                  dbc.Col(html.Div(dcc.Graph(id='game-grid', figure={'layout': {'height': 240,
-                                                                                   'width': 350}})), width='auto')])])
+                                        style={'width': '100%'})),
+                
+                (html.Br()),
+                    
+                dbc.Row([
+                    dbc.Col(html.Div(dcc.Graph(id='BA-BAR', figure=
+                                               {'layout': {'height': 240, 'width': 700}})), width='auto'), 
+                    
+                    dbc.Col(html.Div(dcc.Graph(id='game-grid', figure=
+                                               {'layout': {'height': 240, 'width': 350}})), width='auto')])])
                                 
 , className='dashboard-container')
     
@@ -99,7 +125,6 @@ app.layout = dbc.Container(html.Div(children=[html.H1('MLB Batting Dashboard',
 
 def set_year(chosen_year):
     current_batting = base.batting_stats_bref(chosen_year)
-    df_mlbid = current_batting['mlbID']
     current_batting['Year'] = chosen_year
     current_batting['mlbID2'] = current_batting['mlbID']
     current_batting = current_batting.set_index('mlbID')
