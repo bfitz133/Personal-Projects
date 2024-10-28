@@ -142,7 +142,7 @@ def set_year(chosen_year):
     dropdown_dict = {}
     dropdown_list = []
     for player in players_dict.values():
-        dropdown_dict['label'] = player
+        dropdown_dict['label'] = player.encode('utf-8').decode('unicode_escape').encode('latin-1').decode('utf-8')
         dropdown_dict['value'] = player
         dropdown_list.append(dropdown_dict)
         dropdown_dict = {}
