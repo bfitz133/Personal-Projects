@@ -20,12 +20,12 @@ dates_dict = {2021: ['2021-03-30', '2021-10-04'],
                   2023: ['2023-03-29', '2023-10-02'],
                   2024: ['2024-03-19', '2024-10-02']}
 # Create a dash application
-app = dash.Dash(__name__, external_stylesheets=[dbc.themes.SIMPLEX])
+app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 
 # Create an app layout
 app.layout = dbc.Container(html.Div(
-    children=[  html.H1('MLB Batting Dashboard',
-                    style={'textAlign': 'center', 'color': '#ffffff', 'font-size': 40}),
+    children=[  html.H3('MLB Batting Dashboard',
+                    style={'textAlign': 'center', 'color': '#ffffff', 'font-size': 28}),
               
                 html.H4('', id='playerteam',
                     style={'textAlign': 'left', 'color': '#ffff00', 'font-size': 18}),
@@ -60,7 +60,8 @@ app.layout = dbc.Container(html.Div(
                     
                     dbc.Col(dbc.Card(id='rbi_card', style = {"width": "12.5rem"}), width='auto'),
                     
-                    dbc.Col(dbc.Card(id='ops_card', style = {"width": "12.5rem"}), width='auto')]),
+                    dbc.Col(dbc.Card(id='ops_card', style = {"width": "12.5rem"}), width='auto')],
+                        style={'height':85}),
                 
                 html.Br(), 
                 
@@ -72,46 +73,54 @@ app.layout = dbc.Container(html.Div(
                                                 end_date='', min_date_allowed='', max_date_allowed='',
                                                 style={'backgroundColor': '#FFFFFF', 'textAlign': 'center'},))],
                         
-                        style={'width': '100%', 'display': 'flex', 
-                               'align-items': 'center', 'justify-content': 'center'}),
+                        style={'width': '100%', 'display': 'flex', 'height': '35px', 
+                               'align-items': 'center', 'justify-content': 'center'},
+                        ),
                 
                 html.Br(), 
-                
-                html.Div(
+                    
                 dbc.Row([
-                    dbc.Col(dcc.Dropdown(id='statistic-dropdown',
+                    dbc.Col([
+                        dbc.Card(
+                            dbc.CardBody(
+                                [dbc.Row([
+                                    dbc.Col([
+                                        html.Label(['Statistic:'], style={'font-weight':'bold', 'font-size': 11,
+                                                                                                'color': '#FFFFFF'}),
+                                        dcc.Dropdown(id='statistic-dropdown',
                                         options=[{'label': 'Batting Average', 'value': 'Batting Average'},
                                                  {'label': 'Home Runs', 'value': 'Home Runs'}],
                                         value='Batting Average', placeholder='Choose Statistic Here',
                                         searchable=True,
-                                        style={'backgroundColor': '#FFFFFF', 'width': '21rem', 
-                                               'height': '25px', 'font-size': 14}), width='auto'), 
-                                    
-                    dbc.Col(dcc.Dropdown(id='grouping',
+                                        style={'width': '100%', 'font-size': 10,
+                                                'backgroundColor': '#FFFFFF', 'height': '25px', 'display': 'inline-block'})], width=5),
+                                    dbc.Col([
+                                    html.Label(['Group By:'], style={'font-weight':'bold', 'font-size': 11,
+                                                                                                'color': '#FFFFFF'}),
+                                        dcc.Dropdown(id='grouping',
                                         options=[{'label': 'Month', 'value': 'Month'},
                                                  {'label': 'R/L Split', 'value': 'p_throws'},
                                                  {'label': 'Pitch Type', 'value': 'pitch_type'},
                                                  {'label': 'Count', 'value': 'Batter_Count'}],
                                         value='Month', placeholder='choose grouping',
-                                        style={'width': '21rem','height': '25px', 'font-size': 14,
-                                                'backgroundColor': '#FFFFFF'}), width='auto'), 
-                    
-                    dbc.Col(html.H3('Game Log',
-                                        style={'textAlign': 'center', 'color': '#ffffff',
-                                               'font-size': 18,
-                                               'font-family': 'Arial Black'}))],
-                                        style={'width': '100%'})),
-                
-                (html.Br()),
-                    
-                dbc.Row([
-                    dbc.Col(html.Div(dcc.Graph(id='BA-BAR', figure=
-                                               {'layout': {'height': 240, 'width': 700}})), width='auto'), 
-                    
-                    dbc.Col(html.Div(dcc.Graph(id='game-grid', figure=
-                                               {'layout': {'height': 240, 'width': 350}})), width='auto')])])
-                                
-, className='dashboard-container')
+                                        style={'width': '100%', 'font-size': 10,
+                                                'backgroundColor': '#FFFFFF', 'height': '25px', 'display': 'inline-block'})], width=3)
+                                ]),
+                                 
+                                 
+                                 
+                                 
+                                 dbc.Row([dbc.Col(
+                                     dcc.Graph(id='BA-BAR', figure=
+                                               {'layout': {'height': 255, 'width': 400}})),
+                                          
+                                          
+                                          ]),    
+                    ]),
+                        style={'height':330}) ], width = 5), dbc.Col(dcc.Graph(id='pitch-scatter', figure=
+                                               {'layout': {'height': 330, 'width': 350}}, config={"frameMargins":30})), dbc.Col(dcc.Graph(id='game-grid', figure=
+                                               {'layout': {'height': 330, 'width': 260}}))], style={'height':300}), ]
+) ,className='dashboard-container')
     
 
 # Callback Function for Year Selection
@@ -159,6 +168,7 @@ def set_year(chosen_year):
               Output(component_id='BA-BAR', component_property='figure'),
               Output(component_id='playerteam', component_property='children'),
               Output(component_id='game-grid', component_property='figure'),
+              Output(component_id='pitch-scatter', component_property='figure'),
               Input(component_id='player-dropdown', component_property='value'),
               Input(component_id='statistic-dropdown', component_property='value'),
               Input('intermediate-value', 'data'),
@@ -216,6 +226,71 @@ def get_card_viz(player, statistic, batting, start_date, end_date, groupon):
     statcast_player['Month'] = pd.to_datetime(statcast_player['game_date']).dt.month
     statcast_player['Walk'] = statcast_player['events'].apply(lambda x: 1 if x =='walk' else 0)
     statcast_player['Hit'] = statcast_player['events'].apply(lambda x: 1 if x in ['single', 'double', 'triple', 'home_run'] else 0)
+    
+    
+    #scatter plot for pitch result
+    def g(row):
+        if row['events'] in ['single', 'double', 'triple', 'home_run']:
+            val = 'Hit'
+        elif row['description'].__contains__('ball'):
+            val = 'Ball'
+        elif row['description'].__contains__('pitchout'):
+            val = 'Ball'
+        elif row['description'].__contains__('hit_by_pitch'):
+            val = 'Ball'
+        else:
+            val = 'Strike'
+        return val
+
+    statcast_player['Pitch_Result_2'] = statcast_player.apply(g, axis=1)
+
+    Strike = statcast_player[statcast_player['Pitch_Result_2'] == 'Strike']
+    Ball = statcast_player[statcast_player['Pitch_Result_2'] == 'Ball'] 
+    Hit = statcast_player[statcast_player['Pitch_Result_2'] == 'Hit']                 
+    pitch_scatter = go.Figure()
+    
+    pitch_scatter.add_trace(go.Scatter(
+    x=Strike['plate_x'], y=Strike['plate_z'],
+    name="Strike", mode= 'markers', marker_color='red'))
+    
+    pitch_scatter.add_trace(go.Scatter(
+    x=Ball['plate_x'], y=Ball['plate_z'],
+    name="Ball", mode= 'markers', marker_color='#378bf1'))
+    
+    pitch_scatter.add_trace(go.Scatter(
+    x=Hit['plate_x'], y=Hit['plate_z'],
+    name="Hit", mode= 'markers', marker_color='green'))
+    
+    pitch_scatter.add_trace(go.Scatter(
+        x=[-.83, .83], y=[1.5, 1.5], mode='lines', marker_color='white', showlegend=False
+    ))
+    pitch_scatter.add_trace(go.Scatter(
+        x=[-.83, .83], y=[3.5, 3.5], mode='lines', marker_color='white', showlegend=False
+    ))
+    pitch_scatter.add_trace(go.Scatter(
+        x=[-.83, -.83], y=[1.5, 3.5], mode='lines', marker_color='white', showlegend=False
+    ))
+    pitch_scatter.add_trace(go.Scatter(
+        x=[.83, .83], y=[1.5, 3.5], mode='lines', marker_color='white', showlegend=False
+    ))
+    pitch_scatter.add_trace(go.Scatter(
+        x=[-.277, -.277], y=[1.5, 3.5], mode='lines', marker_color='white', showlegend=False
+    ))
+    pitch_scatter.add_trace(go.Scatter(
+        x=[.277, .277], y=[1.5, 3.5], mode='lines', marker_color='white', showlegend=False
+    ))
+    pitch_scatter.add_trace(go.Scatter(
+        x=[-.83, .83], y=[2.167, 2.167], mode='lines', marker_color='white', showlegend=False
+    ))
+    pitch_scatter.add_trace(go.Scatter(
+        x=[-.83, .83], y=[2.833, 2.833], mode='lines', marker_color='white', showlegend=False
+    ))
+    
+    
+    
+    
+    #pitch_scatter.update_layout(showlegend=True)
+    
     
     #drop nulls in events
     statcast_player = statcast_player.dropna(axis=0, subset=['events'])
@@ -291,9 +366,9 @@ def get_card_viz(player, statistic, batting, start_date, end_date, groupon):
     fig_grid = go.Figure(data=[go.Table(header=dict(values=list(statcast_grid.columns),
                 fill_color='black',
                 align='left',
-                font={'size': 10,
+                font={'size': 8,
                       'family': 'Arial Black'}),
-                columnwidth = [70, 70, 70, 70],
+                columnwidth = [65, 65, 65, 65],
                 cells=dict(values=[statcast_grid.Game_Date, 
                                    statcast_grid.Hits, 
                                    statcast_grid.ABs,
@@ -319,14 +394,25 @@ def get_card_viz(player, statistic, batting, start_date, end_date, groupon):
     
     fig.layout.plot_bgcolor = '#323232'
     fig.layout.paper_bgcolor = '#323232'
-    fig.layout.font = {'color': '#FFFFFF', 'size': 9}
+    fig.layout.font = {'color': '#FFFFFF', 'size': 8}
+    fig.update_layout(margin=dict(l=50, r=50, t=50, b=50))
+    
+    pitch_scatter.layout.plot_bgcolor = '#323232'
+    pitch_scatter.layout.paper_bgcolor = '#323232'
+    pitch_scatter.layout.font = {'color': '#FFFFFF', 'size': 8}
+    pitch_scatter.update_xaxes(showgrid=False, zeroline=False, range=[-1.25, 1.25])
+    pitch_scatter.update_yaxes(showgrid=False, zeroline=False, range=[.75, 4.25])
+    pitch_scatter.update_layout(title='Strike Zone Scatter')
+    pitch_scatter.update_layout(margin=dict(l=50, r=50, t=50, b=20))
+    
+    
     
     fig_grid.layout.plot_bgcolor = '#323232'
     fig_grid.layout.paper_bgcolor = '#323232'
     fig_grid.layout.font = {'color': '#FFFFFF'}
     fig_grid.update_layout(margin=dict(l=0, r=0, t=0, b=0))
     
-    return ba_card, runs_card, hr_card, rbi_card, ops_card, fig, team, fig_grid
+    return ba_card, runs_card, hr_card, rbi_card, ops_card, fig, team, fig_grid, pitch_scatter
 
 if __name__ == '__main__':
     app.run_server()
