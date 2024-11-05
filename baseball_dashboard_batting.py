@@ -95,31 +95,53 @@ app.layout = dbc.Container(html.Div(
                                         style={'width': '100%', 'font-size': 10,
                                                 'backgroundColor': '#FFFFFF', 'height': '25px', 'display': 'inline-block'})], width=5),
                                     dbc.Col([
-                                    html.Label(['Group By:'], style={'font-weight':'bold', 'font-size': 11,
+                                        html.Label(['Group By:'], style={'font-weight':'bold', 'font-size': 11,
                                                                                                 'color': '#FFFFFF'}),
                                         dcc.Dropdown(id='grouping',
                                         options=[{'label': 'Month', 'value': 'Month'},
                                                  {'label': 'R/L Split', 'value': 'p_throws'},
-                                                 {'label': 'Pitch Type', 'value': 'pitch_type'},
+                                                 {'label': 'Pitch Type', 'value': 'pitch_name'},
                                                  {'label': 'Count', 'value': 'Batter_Count'}],
                                         value='Month', placeholder='choose grouping',
                                         style={'width': '100%', 'font-size': 10,
                                                 'backgroundColor': '#FFFFFF', 'height': '25px', 'display': 'inline-block'})], width=3)
-                                ]),
+                                ]),#dbc Row just within cardbody closed
                                  
                                  
                                  
                                  
-                                 dbc.Row([dbc.Col(
-                                     dcc.Graph(id='BA-BAR', figure=
-                                               {'layout': {'height': 255, 'width': 400}})),
-                                          
-                                          
-                                          ]),    
-                    ]),
-                        style={'height':330}) ], width = 5), dbc.Col(dcc.Graph(id='pitch-scatter', figure=
-                                               {'layout': {'height': 330, 'width': 350}}, config={"frameMargins":30})), dbc.Col(dcc.Graph(id='game-grid', figure=
-                                               {'layout': {'height': 330, 'width': 260}}))], style={'height':300}), ]
+                                dbc.Row([
+                                    dbc.Col(
+                                        dcc.Graph(id='BA-BAR', figure=
+                                               {'layout': {'height': 255, 'width': 400}}))])]), #endcardbody
+                                                                            style={'height':330})  #endcard
+                                                                                    ], width = 5), #end dbc col
+                    
+                    dbc.Col([
+                        dbc.Card(
+                            dbc.CardBody(
+                                [dbc.Row([
+                                    dbc.Col([html.Label(['Statcast Metric:'], style={'font-weight':'bold', 'font-size': 11,
+                                                                                                'color': '#FFFFFF'}),
+                                        dcc.Dropdown(id='statcast-dropdown',
+                                        options=[{'label': 'Pitch Type', 'value': 'pitch_name'},
+                                                 {'label': 'Outs', 'value': 'outs_when_up'}],
+                                        value='Pitch Type', placeholder='Choose Statcast Metric',
+                                        searchable=True,
+                                        style={'width': '100%', 'font-size': 10,
+                                                'backgroundColor': '#FFFFFF', 'height': '25px', 'display': 'inline-block'})], width=6)]),
+                    
+                    
+                    #dbc col in outer dbc row
+                                dbc.Row([
+                                    dbc.Col(
+                                        dcc.Graph(id='pitch-scatter', figure=
+                                               {'layout': {'height': 256, 'width': 290}}, config={"frameMargins":30})), 
+                                    ], style={'height':300}), ]),style={'height': 330, 'width': 310})])
+                    
+                , dbc.Col(dcc.Graph(id='game-grid', figure=
+                                               {'layout': {'height': 330, 'width': 260}}))])
+    ]
 ) ,className='dashboard-container')
     
 
@@ -174,9 +196,10 @@ def set_year(chosen_year):
               Input('intermediate-value', 'data'),
               Input(component_id= 'my-date-picker', component_property='start_date'),
               Input(component_id='my-date-picker', component_property='end_date'),
-              Input(component_id='grouping', component_property='value'))
+              Input(component_id='grouping', component_property='value'),
+              Input(component_id='statcast-dropdown', component_property='value'))
 
-def get_card_viz(player, statistic, batting, start_date, end_date, groupon):
+def get_card_viz(player, statistic, batting, start_date, end_date, groupon, statcast_metric):
     #filter for selected player
     current_batting = pd.read_json(io.StringIO(batting), orient='split')
     selected_player = current_batting[current_batting['Name'] == player]
@@ -250,16 +273,16 @@ def get_card_viz(player, statistic, batting, start_date, end_date, groupon):
     pitch_scatter = go.Figure()
     
     pitch_scatter.add_trace(go.Scatter(
-    x=Strike['plate_x'], y=Strike['plate_z'],
-    name="Strike", mode= 'markers', marker_color='red'))
+    x=Strike['plate_x'], y=Strike['plate_z'], marker_symbol = 'x',
+    name="Strike", mode= 'markers', marker_color='red', text=Strike['pitch_name']))
     
     pitch_scatter.add_trace(go.Scatter(
     x=Ball['plate_x'], y=Ball['plate_z'],
-    name="Ball", mode= 'markers', marker_color='#378bf1'))
+    name="Ball", mode= 'markers', marker_color='#378bf1', text=Ball['pitch_name']))
     
     pitch_scatter.add_trace(go.Scatter(
     x=Hit['plate_x'], y=Hit['plate_z'],
-    name="Hit", mode= 'markers', marker_color='green'))
+    name="Hit", mode= 'markers', marker_color='green', text=Hit['pitch_name']))
     
     pitch_scatter.add_trace(go.Scatter(
         x=[-.83, .83], y=[1.5, 1.5], mode='lines', marker_color='white', showlegend=False
@@ -402,8 +425,8 @@ def get_card_viz(player, statistic, batting, start_date, end_date, groupon):
     pitch_scatter.layout.font = {'color': '#FFFFFF', 'size': 8}
     pitch_scatter.update_xaxes(showgrid=False, zeroline=False, range=[-1.25, 1.25])
     pitch_scatter.update_yaxes(showgrid=False, zeroline=False, range=[.75, 4.25])
-    pitch_scatter.update_layout(title='Strike Zone Scatter')
-    pitch_scatter.update_layout(margin=dict(l=50, r=50, t=50, b=20))
+    #pitch_scatter.update_layout(title='Strike Zone Scatter')
+    pitch_scatter.update_layout(margin=dict(l=30, r=50, t=5, b=0))
     
     
     
