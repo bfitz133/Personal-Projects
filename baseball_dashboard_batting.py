@@ -123,11 +123,12 @@ app.layout = dbc.Container(html.Div(
                                 [dbc.Row([
                                     dbc.Col([html.Label(['Statcast Metric:'], style={'font-weight':'bold', 'font-size': 11,
                                                                                                 'color': '#FFFFFF'}),
-                                        dcc.Dropdown(id='statcast-dropdown',
-                                        options=[{'label': 'Pitch Type', 'value': 'pitch_name'},
-                                                 {'label': 'Outs', 'value': 'outs_when_up'}],
-                                        value='Pitch Type', placeholder='Choose Statcast Metric',
-                                        searchable=True,
+                                        dbc.DropdownMenu(id='statcast-dropdown',
+                                                         children=[dcc.Checklist(id = 'statcast-checklist', options=[{'label': 'Pitch Type', 'value': 'pitch_name'},
+                                                 {'label': 'Outs', 'value': 'outs_when_up'}])], label = 'Choose StatCast Metrics', size='sm', direction = 'up',
+                                                         color = '#999999',
+                                        toggle_style={'border-color': '#999999', 'height': '25px', 'display': 'inline-block', 
+                                                      'font-size':10, 'width': '100%'},
                                         style={'width': '100%', 'font-size': 10,
                                                 'backgroundColor': '#FFFFFF', 'height': '25px', 'display': 'inline-block'})], width=6)]),
                     
